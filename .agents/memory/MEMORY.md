@@ -1,0 +1,1 @@
+- [Session and concurrency choices](session-and-concurrency.md) — signed cookies identify sessions; PostgreSQL constraints and transactions enforce ownership.
