@@ -10,6 +10,12 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: users
+    description: Public participant operations
+  - name: numbers
+    description: Number selection operations
+  - name: admin
+    description: Protected administrator operations
 paths:
   /healthz:
     get:
@@ -24,6 +30,152 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /users/register:
+    post:
+      operationId: registerUser
+      tags: [users]
+      summary: Register a participant name
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserRegistrationInput"
+      responses:
+        "201":
+          description: Participant registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserRegistrationResult"
+        "400":
+          description: Invalid name
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Name already used
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /numbers:
+    get:
+      operationId: getNumbers
+      tags: [numbers]
+      summary: Get the current participant's available numbers
+      responses:
+        "200":
+          description: Number availability
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NumbersResponse"
+        "401":
+          description: Participant session required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /numbers/select:
+    post:
+      operationId: selectNumber
+      tags: [numbers]
+      summary: Atomically assign one number to the current participant
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NumberSelectionInput"
+      responses:
+        "201":
+          description: Number selected
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SelectionResult"
+        "400":
+          description: Invalid number
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Participant session required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Number or participant conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /me:
+    get:
+      operationId: getMe
+      tags: [users]
+      summary: Get the current participant session
+      responses:
+        "200":
+          description: Current participant
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MeResponse"
+  /admin/login:
+    post:
+      operationId: adminLogin
+      tags: [admin]
+      summary: Authenticate the administrator
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminLoginInput"
+      responses:
+        "200":
+          description: Admin authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminLoginResult"
+        "401":
+          description: Incorrect password
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /admin/logout:
+    post:
+      operationId: adminLogout
+      tags: [admin]
+      summary: End the administrator session
+      responses:
+        "204":
+          description: Admin session ended
+  /admin/dashboard:
+    get:
+      operationId: getAdminDashboard
+      tags: [admin]
+      summary: Get number assignments for the administrator
+      responses:
+        "200":
+          description: Assignment dashboard
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminDashboard"
+        "401":
+          description: Administrator authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 components:
   schemas:
     HealthStatus:
@@ -33,4 +185,153 @@ components:
           type: string
       required:
         - status
+    ErrorResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        code:
+          type: string
+      required:
+        - message
+        - code
+    UserRegistrationInput:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+      required:
+        - name
+    UserRegistrationResult:
+      type: object
+      properties:
+        userId:
+          type: string
+        name:
+          type: string
+        hasSelection:
+          type: boolean
+        selectedNumber:
+          type: ["integer", "null"]
+        availableCount:
+          type: integer
+      required:
+        - userId
+        - name
+        - hasSelection
+        - selectedNumber
+        - availableCount
+    NumberItem:
+      type: object
+      properties:
+        number:
+          type: integer
+          minimum: 1
+          maximum: 14
+        available:
+          type: boolean
+      required:
+        - number
+        - available
+    NumbersResponse:
+      type: object
+      properties:
+        numbers:
+          type: array
+          items:
+            $ref: "#/components/schemas/NumberItem"
+        selectedNumber:
+          type: ["integer", "null"]
+        availableCount:
+          type: integer
+      required:
+        - numbers
+        - selectedNumber
+        - availableCount
+    NumberSelectionInput:
+      type: object
+      properties:
+        number:
+          type: integer
+          minimum: 1
+          maximum: 14
+      required:
+        - number
+    SelectionResult:
+      type: object
+      properties:
+        selectedNumber:
+          type: integer
+        selectedAt:
+          type: string
+          format: date-time
+      required:
+        - selectedNumber
+        - selectedAt
+    MeResponse:
+      type: object
+      properties:
+        authenticated:
+          type: boolean
+        name:
+          type: ["string", "null"]
+        selectedNumber:
+          type: ["integer", "null"]
+      required:
+        - authenticated
+        - name
+        - selectedNumber
+    AdminLoginInput:
+      type: object
+      properties:
+        password:
+          type: string
+          minLength: 1
+      required:
+        - password
+    AdminLoginResult:
+      type: object
+      properties:
+        authenticated:
+          type: boolean
+      required:
+        - authenticated
+    AdminAssignment:
+      type: object
+      properties:
+        number:
+          type: integer
+        name:
+          type: ["string", "null"]
+        status:
+          type: string
+          enum: [selected, available]
+        selectedAt:
+          type: ["string", "null"]
+          format: date-time
+      required:
+        - number
+        - name
+        - status
+        - selectedAt
+    AdminDashboard:
+      type: object
+      properties:
+        totalNumbers:
+          type: integer
+        selected:
+          type: integer
+        remaining:
+          type: integer
+        assignments:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminAssignment"
+      required:
+        - totalNumbers
+        - selected
+        - remaining
+        - assignments
 

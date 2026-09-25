@@ -1,0 +1,866 @@
+BUILD A SIMPLE, PROFESSIONAL AND CONCURRENCY-SAFE BALANCE NUMBER SYSTEM
+
+Act as a senior full-stack software engineer, database architect, cybersecurity engineer, and professional UI/UX designer.
+Build a complete, real, production-ready web application for a simple balance/number selection system.
+The application must be:
+
+Extremely simple for users.
+
+Professional and clean.
+
+Mobile-friendly.
+
+Fast and lightweight.
+
+Easy to understand.
+
+Secure.
+
+Reliable under simultaneous usage.
+
+Persistent using a real database.
+
+Protected against duplicate names and duplicate number assignments.
+
+Designed to handle many users accessing the system at the same time.
+
+Do NOT build only a visual prototype.
+Build a fully functional application with a real backend and persistent database.
+The public user interface should remain extremely simple. The complexity should be handled by the backend and database.
+
+1. BASIC CONCEPT
+
+There are exactly 14 numbers:
+1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14.
+A user enters their name.
+The system checks whether that name has already been used.
+If the name is valid and unused, the user proceeds to a page containing 14 boxes.
+The numbers 1 to 14 must be randomly distributed among those boxes.
+The user chooses exactly ONE box.
+The number inside that box becomes permanently assigned to that user.
+A user cannot select two numbers.
+A number cannot belong to two users.
+Once a number has been selected, it immediately becomes unavailable.
+The system must enforce all of these rules at the database/backend level.
+
+2. PAGE 1: ENTER NAME
+
+The first page should be extremely simple.
+Display:
+Enter Your Name
+Input:
+Full Name
+Button:
+Continue
+The user enters their name and clicks Continue.
+
+3. NAME VALIDATION
+
+Validate the name on BOTH the frontend and backend.
+The name:
+
+Must not be empty.
+
+Must not consist only of spaces.
+
+Must have leading and trailing unnecessary spaces removed.
+
+Should handle repeated spaces appropriately.
+
+Should accept normal names containing spaces.
+
+Should accept legitimate hyphenated names.
+
+Should accept apostrophes.
+
+Should accept accented/non-English characters.
+
+Must have a reasonable maximum length, such as 100 characters.
+
+Must reject clearly invalid or abusive input where appropriate.
+
+Do not unnecessarily reject legitimate names simply because they contain special characters.
+Create a normalized version of every name for duplicate detection.
+For example, these should be considered the same name:
+John Doe
+john doe
+JOHN DOE
+John Doe
+The displayed name may preserve normal formatting, but duplicate checking must use normalized_name.
+
+4. DUPLICATE NAME PROTECTION
+
+Two users must NOT be able to register the same normalized name.
+If the name already exists, display:
+"This name has already been used. Please enter a different name."
+Do not allow the user to continue.
+IMPORTANT:
+Do not rely only on frontend validation.
+The database must have a UNIQUE constraint on the normalized name.
+This must also work when two people submit the same name at almost exactly the same time.
+The database must guarantee that only one registration succeeds.
+
+5. PAGE 2: NUMBER SELECTION
+
+After successful name validation, display:
+Choose One Number
+Show exactly 14 boxes.
+Each box represents one of the numbers 1 through 14.
+The numbers must be randomly distributed.
+Do NOT display them sequentially.
+Do NOT make:
+Box 1 = 1
+Box 2 = 2
+Box 3 = 3
+etc.
+Instead, shuffle the numbers.
+Example only:
+[ 8 ] [ 3 ] [ 12 ] [ 1 ]
+[ 14 ] [ 6 ] [ 10 ] [ 4 ]
+[ 2 ] [ 13 ] [ 7 ] [ 11 ]
+[ 5 ] [ 9 ]
+The actual arrangement must be randomly generated.
+Use a proper shuffle algorithm such as Fisher-Yates.
+
+6. RANDOMIZATION
+
+The visual arrangement of the 14 numbers should be randomized.
+However, randomization must NEVER create duplicate numbers.
+There must always be exactly one occurrence of each number from 1 through 14.
+Randomizing the visual positions must not change the underlying number ownership.
+For example, if Number 8 has already been assigned to someone, another user seeing Number 8 in a different position must still be unable to select it.
+The backend/database is the source of truth.
+
+7. AVAILABLE AND UNAVAILABLE NUMBERS
+
+When a number has not yet been selected, its box should be available.
+When a number has already been selected, its box must be disabled.
+The user interface should visually distinguish unavailable boxes.
+For example:
+Available:
+Clickable and visually normal.
+Unavailable:
+Disabled, slightly faded, and optionally showing a small lock/check indicator.
+Do not rely only on color to communicate availability.
+
+8. ONE USER = ONE NUMBER
+
+This is a mandatory business rule.
+Every user can select exactly ONE number.
+Once a user successfully selects a number, they cannot select another number.
+This must be enforced by the backend/database.
+Do not rely on:
+
+JavaScript.
+
+LocalStorage.
+
+Cookies alone.
+
+Hiding buttons.
+
+A user attempting to submit another number through another browser, another tab, a modified request, or directly through the API must be rejected.
+Display:
+"You have already selected a number."
+
+9. ONE NUMBER = ONE USER
+
+Each number can only belong to one user.
+If Number 7 has already been selected, another user cannot receive Number 7.
+The database must enforce uniqueness on the selected number.
+The user attempting to select it should receive:
+"This number has already been selected. Please choose another available number."
+Do NOT reveal the name of the person who owns that number.
+
+10. CONCURRENCY AND RACE CONDITIONS
+
+This is one of the most important requirements.
+The application must work correctly when many people access it simultaneously.
+Imagine:
+User A clicks Number 7.
+User B clicks Number 7 at almost exactly the same time.
+The system MUST NOT assign Number 7 to both users.
+Exactly ONE request must succeed.
+The other request must fail gracefully.
+Implement this using proper database transactions, atomic operations, unique constraints, row locking, or an equivalent concurrency-safe mechanism.
+Do NOT depend on frontend checks.
+The database must be the final authority.
+The same protection must apply to duplicate names.
+
+11. DATABASE
+
+Use PostgreSQL if available on Replit.
+Use a simple relational database structure.
+Recommended users table:
+
+id
+
+name
+
+normalized_name
+
+selected_number
+
+created_at
+
+selected_at
+
+The database must enforce:
+normalized_name UNIQUE
+selected_number UNIQUE
+If a separate numbers table makes the implementation cleaner, that is acceptable.
+Do not unnecessarily complicate the database.
+
+12. NUMBER SELECTION TRANSACTION
+
+The selection operation must be atomic.
+Conceptually:
+BEGIN TRANSACTION
+Check whether this user already has a number.
+Check whether the requested number is available.
+If either condition fails:
+ROLLBACK
+Otherwise:
+Assign the number.
+COMMIT
+If another user has already taken the number during the transaction, the second request must fail safely.
+The application must never produce duplicate assignments.
+
+13. SELECTION PROCESS
+
+When the user clicks a number:
+
+Immediately disable the clicked button.
+
+Show a loading state such as: "Selecting..."
+
+Send the request to the backend.
+
+Backend validates the request.
+
+Backend performs the transaction.
+
+If successful, save the assignment permanently.
+
+Redirect the user to the result page.
+
+Display the selected number.
+
+Example:
+Congratulations!
+Your Number
+
+8
+
+Your selection has been successfully recorded.
+
+14. DOUBLE CLICK PROTECTION
+
+If a user clicks a number multiple times quickly:
+
+The frontend should immediately disable the button.
+
+Only one request should be processed.
+
+The backend must still protect against duplicate requests.
+
+Never rely solely on frontend button disabling.
+
+15. REFRESH AND BACK BUTTON
+
+If a user refreshes after selecting a number, they must not receive another number.
+If they return to the selection page, the backend must recognize that they already have a selection.
+The system must prevent another selection.
+Do not depend solely on browser localStorage.
+The database must remain the source of truth.
+
+16. ALL 14 NUMBERS SELECTED
+
+Once all 14 numbers have been assigned, no further user can select a number.
+Display:
+"All numbers have already been selected. Thank you."
+Do not allow a 15th selection.
+The backend must enforce this as well.
+
+17. RESULT PAGE
+
+After successful selection, display a very simple result page.
+Example:
+Selection Successful
+Your number is
+
+8
+
+Your selection has been successfully recorded.
+Do not display other people's names or numbers.
+Do not provide unnecessary information.
+
+18. ADMIN PAGE
+
+Create ONE very simple, separate, protected admin page.
+The admin page should NOT be visible or accessible to ordinary users without authentication.
+The admin page should be a simple dashboard.
+It should allow me, as the administrator, to see the relationship between:
+Number → Name
+For example:
+NumberNameStatus1John DoeSelected2AvailableAvailable3Jane SmithSelected4AvailableAvailable5Michael JohnSelected6AvailableAvailable7AvailableAvailable8Peter NkongSelected9AvailableAvailable10AvailableAvailable11Mary JaneSelected12AvailableAvailable13AvailableAvailable14AvailableAvailable 
+The admin should be able to immediately see which name corresponds to each number.
+Also display a simple summary at the top:
+Total Numbers: 14
+Selected: X
+Remaining: Y
+Do not add unnecessary admin functionality.
+The admin dashboard should be focused only on viewing the assignments and overall status.
+
+19. ADMIN LOGIN
+
+Create a simple admin login page.
+Example:
+Admin Login
+Password:
+[ ******** ]
+[ Login ]
+Only one admin password is required.
+Do NOT expose the admin dashboard publicly.
+Do NOT put the password directly into frontend JavaScript.
+Do NOT hardcode the password into publicly accessible source code.
+
+20. ADMIN PASSWORD
+
+During project setup, generate a strong random administrator password automatically.
+The password should be sufficiently strong, for example at least 16 characters.
+Store it securely in an environment variable:
+ADMIN_PASSWORD
+The password must NEVER be committed to GitHub or exposed in frontend code.
+Because I need to know the password to access the dashboard, display the generated admin password ONCE in the Replit setup/development instructions or provide a clear terminal/setup message telling me exactly what password was generated.
+Also tell me how to change the password later by changing the environment variable.
+Do NOT create a weak password such as:
+admin123
+password
+123456
+Generate a strong password.
+The final README should clearly explain:
+Admin username: admin
+Admin password: the generated password stored in ADMIN_PASSWORD
+Do not print the actual password into source code.
+
+21. ADMIN AUTHENTICATION
+
+Implement proper authentication.
+The admin password must be checked server-side.
+After successful login, create a secure authenticated session.
+Protect all admin API endpoints.
+A normal user must not be able to access:
+/admin
+or admin APIs without authentication.
+If an unauthenticated user attempts to access the admin dashboard, redirect them to the admin login page.
+Do not rely on hiding the admin link.
+
+22. ADMIN DASHBOARD SECURITY
+
+The admin dashboard must not expose database credentials.
+Do not expose:
+
+Database connection strings.
+
+Environment variables.
+
+Password hashes.
+
+Internal server errors.
+
+Sensitive server information.
+
+Only display the information needed by the administrator:
+Number.
+Name.
+Selection status.
+Selection time if useful.
+
+23. ADMIN DASHBOARD DESIGN
+
+Keep it extremely simple.
+Header:
+Balance System Admin
+Summary cards:
+14 Total
+X Selected
+Y Remaining
+Then one clean table:
+Number | Name | Status
+The dashboard should work properly on mobile.
+On mobile, make the table responsive or transform it into clean cards.
+Do not create unnecessary graphs, charts, menus, analytics, or complicated navigation.
+
+24. USER PRIVACY
+
+Normal users must never see:
+
+Other users' names.
+
+Other users' selected numbers.
+
+The admin dashboard.
+
+Database information.
+
+The admin can see the number-to-name assignments.
+
+25. SECURITY REQUIREMENTS
+
+Implement:
+
+Server-side validation.
+
+Client-side validation.
+
+Parameterized queries or ORM.
+
+SQL injection protection.
+
+XSS protection.
+
+Secure sessions.
+
+HTTP-only cookies where applicable.
+
+Appropriate SameSite cookie settings.
+
+CSRF protection where appropriate.
+
+Rate limiting for sensitive endpoints.
+
+Secure environment variables.
+
+Safe error handling.
+
+No database credentials in frontend code.
+
+No admin password in frontend code.
+
+No stack traces exposed to users.
+
+The backend must never trust the frontend.
+
+26. RATE LIMITING
+
+Because the application may be publicly accessible, implement reasonable rate limiting.
+Protect at least:
+
+Name registration endpoint.
+
+Number selection endpoint.
+
+Admin login endpoint.
+
+This should prevent someone from flooding the server with thousands of requests.
+Do not make the limits so aggressive that legitimate users are blocked.
+
+27. PERFORMANCE
+
+The application must be lightweight.
+Avoid unnecessary packages.
+Avoid unnecessary animations.
+Avoid huge images.
+Avoid unnecessary API requests.
+Avoid constant polling.
+Use efficient database queries.
+The main operations are simple:
+
+Register/check name.
+
+Get available numbers.
+
+Reserve number.
+
+Get current user's selection.
+
+Admin retrieves assignments.
+
+The site should load quickly, especially on mobile internet connections.
+
+28. MANY SIMULTANEOUS USERS
+
+Design the backend so the application remains stable when many people access it simultaneously.
+Test situations such as:
+100 users.
+500 users.
+Multiple users selecting numbers simultaneously.
+Multiple users submitting names simultaneously.
+Multiple users refreshing the site.
+Multiple requests arriving at the same time.
+The application must not create:
+
+Duplicate numbers.
+
+Duplicate assignments.
+
+Duplicate registrations.
+
+Corrupted database records.
+
+Use the database constraints and transactions to guarantee consistency.
+
+29. ERROR MESSAGES
+
+Use simple human-friendly messages.
+Empty name:
+"Please enter your name."
+Invalid name:
+"Please enter a valid name."
+Duplicate name:
+"This name has already been used. Please enter a different name."
+Number already selected:
+"This number has already been selected. Please choose another available number."
+Already selected:
+"You have already selected a number."
+All numbers taken:
+"All numbers have already been selected. Thank you."
+Incorrect admin password:
+"Incorrect password."
+Unexpected server error:
+"Something went wrong. Please try again."
+Never show technical stack traces.
+
+30. RESPONSIVE DESIGN
+
+The system must work properly on:
+
+Android phones.
+
+iPhones.
+
+Tablets.
+
+Laptops.
+
+Desktop computers.
+
+Use a mobile-first design.
+The 14 boxes should automatically adapt to the screen.
+No horizontal scrolling should be necessary.
+Number boxes must be large enough for comfortable finger tapping.
+
+31. ACCESSIBILITY
+
+Use:
+
+Proper HTML labels.
+
+Accessible buttons.
+
+Keyboard navigation.
+
+Visible focus states.
+
+Good contrast.
+
+Screen-reader-friendly labels.
+
+Accessible error messages.
+
+Do not create clickable elements that are inaccessible.
+
+32. TECHNOLOGY
+
+Use a reliable lightweight full-stack architecture.
+Preferred:
+Frontend: React or another lightweight modern frontend framework.
+Backend: Node.js with Express or an equivalent reliable backend framework.
+Database: PostgreSQL.
+ORM: Prisma or another reliable ORM if appropriate.
+Use the simplest architecture that satisfies the requirements.
+Do not introduce unnecessary technologies.
+Priority:
+Reliability > Security > Simplicity > Performance > Visual polish
+
+33. API STRUCTURE
+
+Create clean backend endpoints.
+For example:
+POST /api/users/register
+GET /api/numbers
+POST /api/numbers/select
+GET /api/me
+Admin:
+POST /api/admin/login
+GET /api/admin/dashboard
+GET /api/admin/assignments
+The exact routes may be changed if necessary, but maintain a clean structure.
+All sensitive operations must be authenticated and authorized.
+
+34. LOGGING
+
+Maintain lightweight server-side logs for:
+
+Successful registration.
+
+Successful number selection.
+
+Duplicate name attempts.
+
+Number already taken attempts.
+
+Admin login attempts.
+
+Server errors.
+
+Do not log passwords.
+Do not log sensitive credentials.
+
+35. TESTING
+
+Before declaring the application complete, test all of the following.
+
+Name tests
+
+Test:
+
+Empty name.
+
+Spaces only.
+
+Normal name.
+
+Uppercase/lowercase duplicate.
+
+Leading/trailing spaces.
+
+Multiple spaces.
+
+Hyphenated names.
+
+Apostrophes.
+
+Accented characters.
+
+Very long names.
+
+Duplicate names.
+
+Number tests
+
+Test:
+
+Selecting each number.
+
+Selecting an already taken number.
+
+Selecting twice.
+
+Double clicking.
+
+Refreshing after selection.
+
+Opening multiple tabs.
+
+Using the browser back button.
+
+Attempting direct API manipulation.
+
+Concurrency tests
+
+Simulate multiple users selecting the same number at almost exactly the same time.
+Expected:
+Exactly one user receives the number.
+Never two.
+Also simulate multiple users registering the same name simultaneously.
+Expected:
+Exactly one registration succeeds.
+
+Full completion test
+
+Select all 14 numbers.
+Then attempt another selection.
+Expected:
+No number is assigned.
+
+Admin tests
+
+Test:
+
+Correct admin password.
+
+Incorrect admin password.
+
+Unauthenticated access.
+
+Direct admin API access.
+
+Mobile admin dashboard.
+
+Correct display of number-to-name assignments.
+
+36. ADMIN PASSWORD SECURITY TEST
+
+Confirm that:
+
+The password is not visible in frontend JavaScript.
+
+The password is not included in API responses.
+
+The password is not committed to Git.
+
+The password is stored through Replit environment variables.
+
+The admin session is properly authenticated.
+
+An unauthenticated user cannot access the dashboard.
+
+37. PROJECT STRUCTURE
+
+Keep the code clean and maintainable.
+Separate:
+
+Frontend components.
+
+Backend routes.
+
+Database logic.
+
+Authentication.
+
+Validation.
+
+Configuration.
+
+Admin functionality.
+
+Do not put the entire application into one massive file.
+
+38. README
+
+Create a clear README explaining:
+
+What the application does.
+
+How to run it.
+
+How the database works.
+
+How to configure environment variables.
+
+How the admin password works.
+
+How to access the admin dashboard.
+
+How to reset the database if necessary.
+
+How to deploy on Replit.
+
+How concurrency protection works.
+
+Clearly tell me where the generated admin password is available during setup.
+
+39. FINAL USER EXPERIENCE
+
+The public user experience should be approximately:
+
+STEP 1
+
+Enter Your Name
+[ Full Name ]
+[ Continue ]
+↓
+
+STEP 2
+
+Choose One Number
+[ 8 ] [ 3 ] [ 12 ] [ 1 ]
+[ 14 ] [ 6 ] [ 10 ] [ 4 ]
+[ 2 ] [ 13 ] [ 7 ] [ 11 ]
+[ 5 ] [ 9 ]
+↓
+
+STEP 3
+
+Selection Successful
+Your Number Is
+
+8
+
+Your selection has been successfully recorded.
+That's all.
+Keep it simple.
+
+40. FINAL ADMIN EXPERIENCE
+
+Admin visits:
+/admin
+Login:
+Balance System Admin
+Password
+[ ******** ]
+[ Login ]
+↓
+Dashboard:
+Balance System
+Total Numbers: 14
+Selected: X
+Remaining: Y
+Then:
+NumberNameStatus1John DoeSelected2AvailableAvailable3Jane SmithSelected4AvailableAvailable.........14AvailableAvailable 
+The administrator should immediately understand who has which number.
+No unnecessary features.
+No complicated navigation.
+No unnecessary analytics.
+
+41. IMPORTANT: DO NOT BUILD A FAKE DEMO
+
+This is critical.
+Do not create fake hardcoded users.
+Do not use fake numbers.
+Do not simulate database behavior with localStorage.
+Do not make the system appear functional when the backend is not functional.
+Use a real persistent PostgreSQL database.
+The number assignments must survive:
+
+Browser refresh.
+
+Browser closure.
+
+Server restart.
+
+Deployment restart.
+
+42. FINAL QUALITY REQUIREMENT
+
+Before saying the project is complete:
+
+Run the application.
+
+Register multiple users.
+
+Verify duplicate names are blocked.
+
+Select numbers.
+
+Verify selected numbers become unavailable.
+
+Verify one user cannot select twice.
+
+Verify one number cannot belong to two users.
+
+Test simultaneous selection.
+
+Test all 14 numbers being exhausted.
+
+Test the admin login.
+
+Verify the admin dashboard shows the correct name for every number.
+
+Verify ordinary users cannot access admin information.
+
+Test the application on a mobile-sized screen.
+
+Check browser console for errors.
+
+Check backend logs for errors.
+
+Fix all issues found.
+
+Only after these tests pass should the project be considered complete.
+The final application should be simple on the outside and robust underneath.
+Do not add unnecessary features.
+Do not complicate the user experience.
+Build exactly this system.

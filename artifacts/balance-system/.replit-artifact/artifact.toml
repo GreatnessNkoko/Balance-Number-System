@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Balance Number System"
+description = "A simple, professional number selection application with persistent, concurrency-safe assignments and a protected administrator dashboard."
+version = "1.0.0"
+id = "artifacts/balance-system"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 18421
+
+[services.development]
+run = "pnpm --filter @workspace/balance-system run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/balance-system", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/balance-system/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "18421"
+BASE_PATH = "/"
