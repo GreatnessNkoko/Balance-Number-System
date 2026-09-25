@@ -1,1 +1,2 @@
 - [Session and concurrency choices](session-and-concurrency.md) — signed cookies identify sessions; PostgreSQL constraints and transactions enforce ownership.
+- [Drizzle error wrapping](drizzle-error-wrapping.md) — expected PostgreSQL conflicts may be nested in a Drizzle error cause.

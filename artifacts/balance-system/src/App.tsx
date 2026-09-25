@@ -3,15 +3,13 @@ import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/reac
 import {
   ArrowLeft,
   ArrowRight,
-  ChevronRight,
   CircleAlert,
   CircleCheck,
+  Gift,
   LockKeyhole,
   LogOut,
   RefreshCw,
   ShieldCheck,
-  Sparkles,
-  UserRound,
 } from 'lucide-react';
 import {
   getGetAdminDashboardQueryKey,
@@ -60,16 +58,8 @@ function BrandMark({ inverse = false }: { inverse?: boolean }) {
 
 function PublicHeader() {
   return (
-    <header className="mx-auto flex w-full max-w-6xl items-center justify-between px-5 py-6 sm:px-8 lg:px-10">
+    <header className="mx-auto flex w-full max-w-3xl items-center px-4 py-4 sm:px-6 sm:py-5">
       <BrandMark />
-      <Link
-        href="/admin"
-        className="group inline-flex items-center gap-2 rounded-full px-3 py-2 text-xs font-semibold text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        data-testid="link-admin-login"
-      >
-        <LockKeyhole className="h-3.5 w-3.5 transition-transform group-hover:-rotate-6" />
-        Admin access
-      </Link>
     </header>
   );
 }
@@ -117,16 +107,26 @@ function ErrorPanel({
 function Home() {
   const [, setLocation] = useLocation();
   const [name, setName] = useState('');
+  const [localError, setLocalError] = useState<string | null>(null);
   const registerUser = useRegisterUser({ request: sessionRequest });
   const trimmedName = name.trim();
 
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!trimmedName || registerUser.isPending) return;
+    if (registerUser.isPending) return;
+    if (!trimmedName) {
+      setLocalError('Please enter your name.');
+      return;
+    }
     registerUser.mutate(
       { data: { name: trimmedName } },
       {
         onSuccess: (result) => {
+          queryClient.setQueryData<MeResponse>(getGetMeQueryKey(), {
+            authenticated: true,
+            name: result.name,
+            selectedNumber: result.selectedNumber,
+          });
           setLocation(result.hasSelection ? '/result' : '/select');
         },
       },
@@ -135,77 +135,40 @@ function Home() {
 
   return (
     <PageFrame>
-      <main className="mx-auto grid w-full max-w-6xl gap-12 px-5 pb-16 pt-10 sm:px-8 sm:pt-16 lg:grid-cols-[1.05fr_.95fr] lg:items-center lg:gap-20 lg:px-10 lg:pb-24 lg:pt-20">
-        <section className="balance-enter">
-          <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-primary/15 bg-primary/5 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-primary">
-            <Sparkles className="h-3.5 w-3.5" />
-            One shared pool · 14 places
-          </div>
-          <h1 className="max-w-xl text-[clamp(3.25rem,8vw,6.8rem)] font-bold leading-[0.92] tracking-[-0.075em] text-foreground">
-            Your number<br />
-            <span className="text-primary">is waiting.</span>
-          </h1>
-          <p className="mt-8 max-w-md text-base leading-7 text-muted-foreground sm:text-lg">
-            Choose exactly one number from a finite shared pool. No duplicates, no second guesses — just a clear place for you.
-          </p>
-          <div className="mt-10 flex items-center gap-4 text-xs font-semibold text-muted-foreground">
-            <span className="grid h-9 w-9 place-items-center rounded-xl bg-accent/35 font-mono text-foreground">01</span>
-            <span className="h-px w-10 bg-border" />
-            <span>Say hello</span>
-            <ChevronRight className="h-3.5 w-3.5 text-primary" />
-            <span>Pick once</span>
-          </div>
-        </section>
-
-        <section className="balance-enter-delay relative">
-          <div className="absolute -right-16 -top-16 h-40 w-40 rounded-full border border-accent/25" />
-          <div className="absolute -bottom-10 -left-10 h-24 w-24 rounded-full bg-primary/5" />
-          <div className="relative rounded-[2rem] border border-card-border bg-card/85 p-6 shadow-[0_24px_70px_-32px_hsl(181_75%_28%_/_0.35)] backdrop-blur sm:p-8">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-primary">Start here</p>
-                <h2 className="mt-3 text-2xl font-bold tracking-[-0.04em]">What should we call you?</h2>
-              </div>
-              <span className="rounded-xl bg-secondary px-2.5 py-1.5 font-mono text-[10px] font-bold text-muted-foreground">01 / 02</span>
-            </div>
-            <form className="mt-8" onSubmit={submit}>
-              <label htmlFor="participant-name" className="text-sm font-semibold text-foreground">Your name</label>
-              <div className="mt-2 flex items-center rounded-2xl border border-input bg-background px-4 transition-colors focus-within:border-primary focus-within:ring-4 focus-within:ring-primary/10">
-                <UserRound className="h-4 w-4 shrink-0 text-muted-foreground" />
-                <input
-                  id="participant-name"
-                  value={name}
-                  onChange={(event) => setName(event.target.value)}
-                  placeholder="e.g. Maya Chen"
-                  maxLength={100}
-                  autoComplete="name"
-                  className="min-w-0 flex-1 bg-transparent px-3 py-4 text-sm font-medium outline-none placeholder:text-muted-foreground/65"
-                  data-testid="input-participant-name"
-                />
-              </div>
-              {registerUser.isError ? (
-                <p className="mt-3 flex items-center gap-2 text-xs font-semibold text-destructive" data-testid="status-registration-error">
-                  <CircleAlert className="h-3.5 w-3.5" />
-                  {apiMessage(registerUser.error, 'Something went wrong. Please try again.')}
-                </p>
-              ) : (
-                <p className="mt-3 text-xs leading-5 text-muted-foreground">Use the name your group will recognize.</p>
-              )}
-              <button
-                type="submit"
-                disabled={!trimmedName || registerUser.isPending}
-                className="mt-7 flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-4 text-sm font-bold text-primary-foreground transition-all hover:-translate-y-0.5 hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:translate-y-0"
-                data-testid="button-continue-to-selection"
-              >
-                {registerUser.isPending ? 'Saving your place…' : 'Continue to the pool'}
-                {!registerUser.isPending ? <ArrowRight className="h-4 w-4" /> : null}
-              </button>
-            </form>
-            <div className="mt-7 flex items-center justify-between border-t border-border pt-5 text-[11px] font-semibold text-muted-foreground">
-              <span>One selection per person</span>
-              <span className="font-mono text-primary">BAL / 14</span>
-            </div>
-          </div>
+      <main className="mx-auto flex min-h-[calc(100dvh-76px)] w-full max-w-md items-center px-4 pb-10 sm:px-6">
+        <section className="w-full rounded-3xl border border-card-border bg-card/90 p-5 shadow-sm backdrop-blur sm:p-7">
+          <h1 className="text-3xl font-bold tracking-[-0.055em] text-foreground">Enter your name</h1>
+          <form className="mt-7" onSubmit={submit} noValidate>
+            <label htmlFor="participant-name" className="text-sm font-semibold text-foreground">Full name</label>
+            <input
+              id="participant-name"
+              value={name}
+              onChange={(event) => {
+                setName(event.target.value);
+                setLocalError(null);
+                if (registerUser.isError) registerUser.reset();
+              }}
+              maxLength={100}
+              autoComplete="name"
+              className="mt-2 w-full rounded-2xl border border-input bg-background px-4 py-4 text-base font-medium outline-none transition-colors placeholder:text-muted-foreground/65 focus:border-primary focus:ring-4 focus:ring-primary/10"
+              data-testid="input-participant-name"
+              aria-invalid={Boolean(localError || registerUser.isError)}
+            />
+            {localError || registerUser.isError ? (
+              <p className="mt-3 flex items-start gap-2 text-sm font-semibold leading-5 text-destructive" data-testid="status-registration-error">
+                <CircleAlert className="mt-0.5 h-4 w-4 shrink-0" />
+                {localError ?? apiMessage(registerUser.error, 'Something went wrong. Please try again.')}
+              </p>
+            ) : null}
+            <button
+              type="submit"
+              disabled={registerUser.isPending}
+              className="mt-6 flex min-h-14 w-full items-center justify-center rounded-2xl bg-primary px-5 py-4 text-base font-bold text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/20 disabled:cursor-wait disabled:opacity-60"
+              data-testid="button-continue-to-selection"
+            >
+              {registerUser.isPending ? 'Please wait…' : 'Continue'}
+            </button>
+          </form>
         </section>
       </main>
     </PageFrame>
@@ -238,27 +201,27 @@ function ParticipantLoading() {
 function SelectPage() {
   const [, setLocation] = useLocation();
   const numbersQuery = useGetNumbers({ query: { queryKey: getGetNumbersQueryKey() }, request: sessionRequest });
-  const meQuery = useGetMe({ query: { queryKey: getGetMeQueryKey() }, request: sessionRequest });
   const selectNumber = useSelectNumber({ request: sessionRequest });
   const [pendingNumber, setPendingNumber] = useState<number | null>(null);
-  const me = meQuery.data;
 
   useEffect(() => {
-    if (!meQuery.isLoading && (!me?.authenticated)) setLocation('/');
-    if (me?.selectedNumber) setLocation('/result');
-  }, [me, meQuery.isLoading, setLocation]);
+    if (numbersQuery.isError && 'status' in numbersQuery.error && numbersQuery.error.status === 401) {
+      setLocation('/');
+    }
+    if (numbersQuery.data?.selectedNumber) setLocation('/result');
+  }, [numbersQuery.data?.selectedNumber, numbersQuery.error, numbersQuery.isError, setLocation]);
 
-  if (meQuery.isLoading || numbersQuery.isLoading) return <ParticipantLoading />;
-  if (meQuery.isError || numbersQuery.isError) {
+  if (numbersQuery.isLoading) return <ParticipantLoading />;
+  if (numbersQuery.isError) {
     return (
       <PageFrame>
         <main className="mx-auto max-w-5xl px-5 pb-16 pt-16 sm:px-8 lg:px-10">
-          <ErrorPanel title="The pool is taking a breath" message="We couldn't load the available numbers. Your place is safe — try once more." onRetry={() => { void meQuery.refetch(); void numbersQuery.refetch(); }} />
+          <ErrorPanel title="The pool is taking a breath" message="We couldn't load the available boxes. Please try again." onRetry={() => { void numbersQuery.refetch(); }} />
         </main>
       </PageFrame>
     );
   }
-  if (!me?.authenticated || !numbersQuery.data) return null;
+  if (!numbersQuery.data) return null;
 
   const numbers = numbersQuery.data.numbers;
   const choose = (number: number) => {
@@ -271,38 +234,30 @@ function SelectPage() {
           queryClient.setQueryData<MeResponse>(getGetMeQueryKey(), (old) => old ? { ...old, selectedNumber: result.selectedNumber } : old);
           setLocation('/result');
         },
-        onError: () => setPendingNumber(null),
+        onError: () => {
+          setPendingNumber(null);
+          void numbersQuery.refetch();
+        },
       },
     );
   };
 
   return (
     <PageFrame>
-      <main className="mx-auto w-full max-w-5xl px-5 pb-16 pt-8 sm:px-8 sm:pt-12 lg:px-10 lg:pb-24">
-        <div className="balance-enter flex flex-col justify-between gap-5 border-b border-border pb-7 sm:flex-row sm:items-end">
-          <div>
-            <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-primary">02 / 02 · The shared pool</p>
-            <h1 className="mt-4 text-4xl font-bold tracking-[-0.065em] sm:text-6xl">Pick your number.</h1>
-            <p className="mt-3 max-w-lg text-sm leading-6 text-muted-foreground sm:text-base">Available numbers are quiet. Selected numbers are settled. Choose the one that feels like yours.</p>
-          </div>
-          <div className="flex shrink-0 items-center gap-3 rounded-2xl border border-border bg-card/70 px-4 py-3">
-            <span className="grid h-9 w-9 place-items-center rounded-xl bg-accent/30 text-accent-foreground"><UserRound className="h-4 w-4" /></span>
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">Choosing for</p>
-              <p className="mt-0.5 max-w-[150px] truncate text-sm font-bold" data-testid="text-current-participant">{me.name}</p>
-            </div>
-          </div>
+      <main className="mx-auto w-full max-w-md px-4 pb-12 pt-7 sm:px-6 sm:pt-10">
+        <div className="balance-enter">
+          <h1 className="text-3xl font-bold tracking-[-0.055em]">Choose one box</h1>
+          <p className="mt-2 text-sm leading-6 text-muted-foreground">Tap one box. Your number will be shown next.</p>
         </div>
 
-        <div className="balance-enter-delay mt-8 flex items-center justify-between gap-4">
+        <div className="mt-6 flex items-center justify-between gap-4">
           <p className="text-sm font-semibold text-foreground">
             <span className="font-mono text-primary" data-testid="text-available-count">{numbersQuery.data.availableCount}</span>
-            <span className="ml-1 text-muted-foreground">of 14 still available</span>
+            <span className="ml-1 text-muted-foreground">boxes available</span>
           </p>
-          <p className="hidden text-xs font-semibold text-muted-foreground sm:block">Select once · selection is final</p>
         </div>
 
-        <div className="balance-enter-delay-2 mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="mt-4 grid grid-cols-2 gap-3">
           {numbers.map((item) => {
             const isPending = pendingNumber === item.number;
             return (
@@ -311,18 +266,17 @@ function SelectPage() {
                 type="button"
                 disabled={!item.available || selectNumber.isPending}
                 onClick={() => choose(item.number)}
-                className={`group relative flex h-28 flex-col justify-between overflow-hidden rounded-2xl border p-4 text-left transition-all focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/20 ${
+                className={`group relative flex min-h-32 flex-col items-center justify-center gap-2 overflow-hidden rounded-2xl border p-3 text-center transition-all focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/20 ${
                   item.available
                     ? 'border-border bg-card hover:-translate-y-1 hover:border-primary/55 hover:shadow-[0_15px_30px_-20px_hsl(181_75%_28%_/_0.8)]'
                     : 'cursor-not-allowed border-border/60 bg-muted/45 text-muted-foreground/60'
                 } ${isPending ? 'border-accent bg-accent/15' : ''}`}
                 data-testid={`button-number-${item.number}`}
-                aria-label={`Number ${item.number}${item.available ? ', available' : ', already selected'}`}
+                aria-label={`Box ${item.number}${item.available ? ', available' : ', already selected'}`}
               >
-                <span className={`font-mono text-3xl font-bold tracking-[-0.09em] ${item.available ? 'text-foreground group-hover:text-primary' : ''}`}>{String(item.number).padStart(2, '0')}</span>
-                <span className="flex items-center justify-between text-[10px] font-bold uppercase tracking-[0.14em]">
-                  {isPending ? 'Saving…' : item.available ? 'Available' : 'Taken'}
-                  {item.available && !isPending ? <ArrowRight className="h-3.5 w-3.5 opacity-50 transition-transform group-hover:translate-x-1" /> : null}
+                {isPending ? <RefreshCw className="h-9 w-9 animate-spin text-accent-foreground" /> : <Gift className={`h-10 w-10 ${item.available ? 'text-primary group-hover:text-primary/80' : 'text-muted-foreground/50'}`} strokeWidth={1.6} />}
+                <span className="text-xs font-bold">
+                  {isPending ? 'Choosing…' : item.available ? 'Available' : 'Taken'}
                   {isPending ? <RefreshCw className="h-3.5 w-3.5 animate-spin text-accent-foreground" /> : null}
                 </span>
               </button>
@@ -335,10 +289,6 @@ function SelectPage() {
             {apiMessage(selectNumber.error, 'Something went wrong. Please try again.')}
           </div>
         ) : null}
-        <div className="mt-10 flex items-start gap-3 rounded-2xl bg-primary/5 px-4 py-4 text-xs leading-5 text-muted-foreground">
-          <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-          <p><span className="font-bold text-foreground">A considered choice.</span> Each number can belong to one person only. Once you choose, we record it immediately and keep it yours.</p>
-        </div>
       </main>
     </PageFrame>
   );
